@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-import logging
-import logging.config
 import os
 import time
 import tomllib
@@ -11,46 +9,15 @@ from typing import Any
 import dotenv
 import httpx
 
+from . import log
+
 CONFIG_FILE = "twitch-alert.toml"
 SCAN_FREQUENCY_SECONDS = 300  # Five minutes
 
 dotenv.load_dotenv()
 
-
-LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "default": {
-            "class": "logging.StreamHandler",
-            "formatter": "http",
-            "level": "INFO",
-        }
-    },
-    "formatters": {
-        "http": {
-            "format": "%(levelname)s [%(asctime)s] - %(message)s",
-            "datefmt": "%Y-%m-%d %H:%M:%S",
-        }
-    },
-    "loggers": {
-        "__main__": {
-            "handlers": ["default"],
-            "level": "INFO",
-        },
-        "httpx": {
-            "handlers": ["default"],
-            "level": "ERROR",
-        },
-        "httpcore": {
-            "handlers": ["default"],
-            "level": "ERROR",
-        },
-    },
-}
-
-logging.config.dictConfig(LOGGING_CONFIG)
-logger = logging.getLogger(__name__)
+log.init_logging(os.getenv("TWITCH_ALERTS_LOGGGING", "INFO"))
+logger = log.get_logger("twitch-alerts")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
