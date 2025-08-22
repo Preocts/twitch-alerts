@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import os
 import json
+import os
 from unittest.mock import patch
 
 import pytest
 import vcr  # type: ignore
-
 
 from twitch_alerts import __main__ as main
 
@@ -42,7 +41,7 @@ def test_load_config() -> None:
 
 
 @recorder.use_cassette()
-def test_get_bearer_token():
+def test_get_bearer_token() -> None:
     bearer = main.get_bearer_token()
 
     assert bearer
@@ -50,8 +49,24 @@ def test_get_bearer_token():
 
 
 @recorder.use_cassette()
-def test_get_bearer_token_failure():
+def test_get_bearer_token_failure() -> None:
     with patch.dict(os.environ, {"TWITCH_ALERT_CLIENT_ID": "MOCK"}):
         bearer = main.get_bearer_token()
 
     assert bearer is None
+
+
+@recorder.use_cassette()
+def test_is_stream_live() -> None:
+
+    bearer = main.get_bearer_token()
+
+    assert bearer
+
+    live_check_one = main.is_stream_live("skittishandbus", bearer)
+    live_check_two = main.is_stream_live("djsinneki", bearer)
+    live_check_three = main.is_stream_live("skitishandbus", bearer)
+
+    assert live_check_one is False
+    assert live_check_two is True
+    assert live_check_three is False

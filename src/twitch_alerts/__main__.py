@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import os
-import logging
 import dataclasses
-import tomllib
+import logging
+import os
 import time
+import tomllib
 from typing import Any
 
-import httpx
 import dotenv
+import httpx
 
 CONFIG_FILE = "twitch-alert.toml"
 SCAN_FREQUENCY_SECONDS = 300  # Five minutes
@@ -40,6 +40,13 @@ class Bearer:
     @property
     def expired(self) -> bool:
         return time.time() >= self.expires_at
+
+    @property
+    def header(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.access_token}",
+            "Client-Id": os.getenv("TWITCH_ALERT_CLIENT_ID", ""),
+        }
 
 
 def load_config() -> Config:
@@ -73,3 +80,25 @@ def get_bearer_token() -> Bearer | None:
     logger.info("Bearer token response got.")
 
     return Bearer.parse_response(response.json())
+
+
+def is_stream_live(channel_name: str, bearer: Bearer) -> bool:
+    logger.info("Checking on: %s", channel_name)
+
+    url = "https://api.twitch.tv/helix/streams"
+    params = {"user_login": channel_name}
+
+    response = httpx.get(url, params=params, timeout=3, headers=bearer.header)
+
+    if not response.is_success:
+        logger.error("Failed to check '%s' with error: %s", channel_name, response.text)
+        return False
+
+    if not response.json()["data"]:
+        is_live = False
+    else:
+        is_live = response.json()["data"][0].get("type") == "live"
+
+    logger.info("%s live check: %s", channel_name, is_live)
+
+    return is_live
