@@ -11,3 +11,5 @@ def test_load_config() -> None:
 
     assert result.discord_webhook_url == "https://example.com"
     assert result.twitch_channel_names == {"all", "the", "streamers"}
+    assert result.client_id == "[clientId]"
+    assert result.client_secret == "[clientSecret]"
