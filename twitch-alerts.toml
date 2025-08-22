@@ -1,0 +1,10 @@
+twitch_client_id="Twitch Client ID here"
+twitch_client_secret="PUT THIS IN THE .env FILE"
+
+twitch_channel_names = [
+    "all",
+    "the",
+    "streamers",
+]
+
+discord_webhook_url="PUT THIS IN THE .env FILE"
