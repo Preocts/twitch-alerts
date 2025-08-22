@@ -4,7 +4,6 @@ import json
 import os
 from unittest.mock import patch
 
-import pytest
 import vcr  # type: ignore
 
 from twitch_alerts import __main__ as main
@@ -27,45 +26,39 @@ recorder = vcr.VCR(
 )
 
 
-@pytest.fixture
-def test_config() -> main.Config:
-    """Load a test config without risk of actual values"""
+def test_load_config() -> None:
     with patch.dict(os.environ, {}, clear=True):
-        return main.load_config()
-
-
-@pytest.fixture
-def live_config() -> main.Config:
-    """Load a test config with risk of actual values for recorded tests"""
-    return main.load_config()
-
-
-def test_load_config(test_config: main.Config) -> None:
-    assert test_config.twitch_client_id == "Twitch Client ID here"
-    assert test_config.twitch_client_secret == "PUT THIS IN THE .env FILE"
-    assert test_config.discord_webhook_url == "PUT THIS IN THE .env FILE"
-    assert test_config.twitch_channel_names == {"all", "the", "streamers"}
+        config = main.load_config()
+        assert config.twitch_client_id == "Twitch Client ID here"
+        assert config.twitch_client_secret == "PUT THIS IN THE .env FILE"
+        assert config.discord_webhook_url == "PUT THIS IN THE .env FILE"
+        assert config.twitch_channel_names == {"all", "the", "streamers"}
 
 
 @recorder.use_cassette()
-def test_get_bearer_token(live_config: main.Config) -> None:
-    bearer = main.get_bearer_token(live_config)
+def test_get_bearer_token() -> None:
+    client_id = os.getenv("TWITCH_ALERTS_CLIENT_ID", "mock")
+    client_secret = os.getenv("TWITCH_ALERTS_CLIENT_ID", "mock")
+
+    bearer = main.get_bearer_token(client_id, client_secret)
 
     assert bearer
     assert not bearer.expired
 
 
 @recorder.use_cassette()
-def test_get_bearer_token_failure(test_config: main.Config) -> None:
-    bearer = main.get_bearer_token(test_config)
+def test_get_bearer_token_failure() -> None:
+    bearer = main.get_bearer_token("mock", "mock")
 
     assert bearer is None
 
 
 @recorder.use_cassette()
-def test_is_stream_live(live_config: main.Config) -> None:
+def test_is_stream_live() -> None:
+    client_id = os.getenv("TWITCH_ALERTS_CLIENT_ID", "mock")
+    client_secret = os.getenv("TWITCH_ALERTS_CLIENT_ID", "mock")
 
-    bearer = main.get_bearer_token(live_config)
+    bearer = main.get_bearer_token(client_id, client_secret)
 
     assert bearer
 

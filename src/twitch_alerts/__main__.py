@@ -61,14 +61,14 @@ def load_config(filename: str | None = None) -> Config:
     )
 
 
-def get_bearer_token(config: Config) -> Auth | None:
+def get_bearer_token(client_id: str, client_secret: str) -> Auth | None:
     """Get Twitch API bearer via client credential grant flow."""
     logger.info("Getting bearer token...")
 
     url = "https://id.twitch.tv/oauth2/token"
     payload = {
-        "client_id": config.twitch_client_id,
-        "client_secret": config.twitch_client_secret,
+        "client_id": client_id,
+        "client_secret": client_secret,
         "grant_type": "client_credentials",
     }
 
@@ -83,7 +83,7 @@ def get_bearer_token(config: Config) -> Auth | None:
     access_token = response.json()["access_token"]
     expires_at = int(time.time() + response.json()["expires_in"])
 
-    return Auth(access_token, expires_at, config.twitch_client_id)
+    return Auth(access_token, expires_at, client_id)
 
 
 def is_stream_live(channel_name: str, auth: Auth) -> bool:
@@ -110,9 +110,8 @@ def is_stream_live(channel_name: str, auth: Auth) -> bool:
 
 if __name__ == "__main__":
     config = load_config("temp_config.toml")
-    bearer = get_bearer_token(config)
-    assert bearer
+    auth = get_bearer_token(config.twitch_client_id, config.twitch_client_secret)
+    assert auth
 
-    is_stream_live("skittishandbus", bearer)
-    is_stream_live("djsinneki", bearer)
-    is_stream_live("lavelleofficial", bearer)
+    for channel_name in config.twitch_channel_names:
+        is_stream_live(channel_name, auth)
