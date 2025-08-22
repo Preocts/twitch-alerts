@@ -1,0 +1,8 @@
+client_id="[clientId]"
+client_secret="[clientSecret]"
+discord_webhook_url="https://example.com"
+twitch_channel_names = [
+    "all",
+    "the",
+    "streamers",
+]
