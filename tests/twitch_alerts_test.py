@@ -28,38 +28,44 @@ recorder = vcr.VCR(
 
 
 @pytest.fixture
-def config() -> main.Config:
-    return main.Config("https://example.com", frozenset())
+def test_config() -> main.Config:
+    """Load a test config without risk of actual values"""
+    with patch.dict(os.environ, {}, clear=True):
+        return main.load_config()
 
 
-def test_load_config() -> None:
-    with patch.object(main, "CONFIG_FILE", "./tests/twitch-alert.toml"):
-        result = main.load_config()
+@pytest.fixture
+def live_config() -> main.Config:
+    """Load a test config with risk of actual values for recorded tests"""
+    return main.load_config()
 
-    assert result.discord_webhook_url == "https://example.com"
-    assert result.twitch_channel_names == {"all", "the", "streamers"}
+
+def test_load_config(test_config: main.Config) -> None:
+    assert test_config.twitch_client_id == "Twitch Client ID here"
+    assert test_config.twitch_client_secret == "PUT THIS IN THE .env FILE"
+    assert test_config.discord_webhook_url == "PUT THIS IN THE .env FILE"
+    assert test_config.twitch_channel_names == {"all", "the", "streamers"}
 
 
 @recorder.use_cassette()
-def test_get_bearer_token() -> None:
-    bearer = main.get_bearer_token()
+def test_get_bearer_token(live_config: main.Config) -> None:
+    bearer = main.get_bearer_token(live_config)
 
     assert bearer
     assert not bearer.expired
 
 
 @recorder.use_cassette()
-def test_get_bearer_token_failure() -> None:
-    with patch.dict(os.environ, {"TWITCH_ALERT_CLIENT_ID": "MOCK"}):
-        bearer = main.get_bearer_token()
+def test_get_bearer_token_failure(test_config: main.Config) -> None:
+    bearer = main.get_bearer_token(test_config)
 
     assert bearer is None
 
 
 @recorder.use_cassette()
-def test_is_stream_live() -> None:
+def test_is_stream_live(live_config: main.Config) -> None:
 
-    bearer = main.get_bearer_token()
+    bearer = main.get_bearer_token(live_config)
 
     assert bearer
 
