@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import logging.config
 import os
 import time
 import tomllib
@@ -15,7 +16,40 @@ SCAN_FREQUENCY_SECONDS = 300  # Five minutes
 
 dotenv.load_dotenv()
 
-logging.basicConfig(level="INFO")
+
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "default": {
+            "class": "logging.StreamHandler",
+            "formatter": "http",
+            "level": "INFO",
+        }
+    },
+    "formatters": {
+        "http": {
+            "format": "%(levelname)s [%(asctime)s] - %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        }
+    },
+    "loggers": {
+        "__main__": {
+            "handlers": ["default"],
+            "level": "INFO",
+        },
+        "httpx": {
+            "handlers": ["default"],
+            "level": "ERROR",
+        },
+        "httpcore": {
+            "handlers": ["default"],
+            "level": "ERROR",
+        },
+    },
+}
+
+logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
 
@@ -102,3 +136,11 @@ def is_stream_live(channel_name: str, bearer: Bearer) -> bool:
     logger.info("%s live check: %s", channel_name, is_live)
 
     return is_live
+
+
+if __name__ == "__main__":
+    bearer = get_bearer_token()
+    assert bearer
+
+    is_stream_live("skittishandbus", bearer)
+    is_stream_live("djsinneki", bearer)
