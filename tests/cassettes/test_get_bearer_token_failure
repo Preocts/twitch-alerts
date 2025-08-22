@@ -1,0 +1,42 @@
+interactions:
+- request:
+    body: grant_type=client_credentials
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '89'
+      content-type:
+      - application/x-www-form-urlencoded
+      host:
+      - id.twitch.tv
+      user-agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://id.twitch.tv/oauth2/token
+  response:
+    body:
+      string: '{"status": 400, "message": "invalid client", "access_token": "mockToken"}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '42'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 22 Aug 2025 04:01:31 GMT
+      Server:
+      - nginx
+      X-Ctxlog-Logid:
+      - 1-68a7eb9b-5a94d1f62c8c586b2f11ed6f
+    status:
+      code: 400
+      message: Bad Request
+version: 1
