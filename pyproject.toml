@@ -38,6 +38,7 @@ dev = [
     "pytest",
     "pytest-randomly",
     "coverage",
+    "vcrpy",
 ]
 
 [project.urls]
