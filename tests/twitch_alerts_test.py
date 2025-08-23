@@ -181,3 +181,55 @@ def test_send_discord_webhook_no_webhook(caplog: pytest.LogCaptureFixture) -> No
         main.send_discord_webhook(channels, mock_url)
 
     assert "No Discord webhook given, skipping notification route." in caplog.text
+
+
+@responses.activate(assert_all_requests_are_fired=True)
+def test_send_pagerduty_alert_success_path(caplog: pytest.LogCaptureFixture) -> None:
+    pdurl = "https://events.pagerduty.com/v2/enqueue"
+    mock_key = "pd123"
+    channels = ["channel_one", "channel_two"]
+    required_payload = {
+        "routing_key": mock_key,
+        "event_action": "trigger",
+        "payload": {
+            "summary": "New TwitchTV channel(s) detected as live.",
+            "source": "Twitch-Alerts",
+            "severity": "info",
+            "custom_details": {
+                "channel_one": "https://twitch.tv/channel_one",
+                "channel_two": "https://twitch.tv/channel_two",
+            },
+        },
+    }
+
+    matcher = matchers.json_params_matcher(required_payload, strict_match=False)
+    responses.add(method="POST", url=pdurl, status=200, match=[matcher])
+
+    with caplog.at_level("INFO"):
+        main.send_pagerduty_alert(channels, mock_key)
+
+    assert "PagerDuty notification sent!" in caplog.text
+
+
+@responses.activate(assert_all_requests_are_fired=True)
+def test_send_pagerduty_alert_failure_path(caplog: pytest.LogCaptureFixture) -> None:
+    pdurl = "https://events.pagerduty.com/v2/enqueue"
+    mock_key = "pd123"
+    channels = ["channel_one", "channel_two"]
+
+    responses.add(method="POST", url=pdurl, status=400)
+
+    with caplog.at_level("ERROR"):
+        main.send_pagerduty_alert(channels, mock_key)
+
+    assert "Failed to send PagerDuty notification: 400" in caplog.text
+
+
+def test_send_pagerduty_alert_no_integration_key(caplog: pytest.LogCaptureFixture) -> None:
+    mock_key = ""
+    channels = ["channel_one", "channel_two"]
+
+    with caplog.at_level("INFO"):
+        main.send_pagerduty_alert(channels, mock_key)
+
+    assert "No PagerDuty key given, skipping notification route." in caplog.text
