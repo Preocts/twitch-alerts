@@ -10,7 +10,7 @@ import pytest
 import responses
 from responses import matchers
 
-from twitch_alerts import __main__ as main
+from twitch_alerts import _twitch_alerts
 
 
 def make_twitch_streams_json(user_login: str, *, is_live: bool = True) -> dict[str, Any]:
@@ -48,7 +48,7 @@ def make_twitch_streams_json(user_login: str, *, is_live: bool = True) -> dict[s
 
 def test_load_config() -> None:
     with patch.dict(os.environ, {}, clear=True):
-        config = main.load_config()
+        config = _twitch_alerts.load_config()
         assert config.twitch_client_id == "Twitch Client ID here"
         assert config.twitch_client_secret == "PUT THIS IN THE .env FILE"
         assert config.twitch_channel_names == {"all", "the", "streamers"}
@@ -65,7 +65,7 @@ def test_get_bearer_token() -> None:
         json={"access_token": "mockToken", "expires_in": 5222281, "token_type": "bearer"},
     )
 
-    auth = main.get_bearer_token("mockId", "mockSecret")
+    auth = _twitch_alerts.get_bearer_token("mockId", "mockSecret")
 
     assert auth
     assert not auth.expired
@@ -82,7 +82,7 @@ def test_get_bearer_token_failure() -> None:
         json={"status": 400, "message": "invalid client"},
     )
 
-    bearer = main.get_bearer_token("mock", "mock")
+    bearer = _twitch_alerts.get_bearer_token("mock", "mock")
 
     assert bearer is None
 
@@ -98,7 +98,7 @@ def test_isolate_who_went_live_with_state() -> None:
     """
     mock_token = "mockToken"
     mock_client_id = "mockClientId"
-    mock_auth = main.Auth(mock_token, int(time.time() + 600), mock_client_id)
+    mock_auth = _twitch_alerts.Auth(mock_token, int(time.time() + 600), mock_client_id)
     channels = ["channel_one", "invalid", "channel_three", "channel_four"]
     expected_no_state = {"channel_one", "channel_three"}
     expected_with_state = {"channel_four"}
@@ -136,8 +136,8 @@ def test_isolate_who_went_live_with_state() -> None:
     os.remove(filename)
 
     try:
-        results_no_state = main.isolate_who_went_live(mock_auth, filename, channels)
-        results_with_state = main.isolate_who_went_live(mock_auth, filename, channels)
+        results_no_state = _twitch_alerts.isolate_who_went_live(mock_auth, filename, channels)
+        results_with_state = _twitch_alerts.isolate_who_went_live(mock_auth, filename, channels)
 
         assert results_no_state == expected_no_state
         assert results_with_state == expected_with_state
@@ -175,7 +175,7 @@ def test_send_discord_webhook_success_path(
     responses.add(method="POST", url=mock_url, status=200, match=[matcher])
 
     with caplog.at_level("INFO"):
-        main.send_discord_webhook(channels, mock_url)
+        _twitch_alerts.send_discord_webhook(channels, mock_url)
 
     assert "Discord notification sent!" in caplog.text
 
@@ -188,7 +188,7 @@ def test_send_discord_webhook_failure_path(caplog: pytest.LogCaptureFixture) -> 
     responses.add(method="POST", url=mock_url, status=404)
 
     with caplog.at_level("INFO"):
-        main.send_discord_webhook(channels, mock_url)
+        _twitch_alerts.send_discord_webhook(channels, mock_url)
 
     assert "Failed to send discord notification: 404" in caplog.text
 
@@ -198,7 +198,7 @@ def test_send_discord_webhook_no_webhook(caplog: pytest.LogCaptureFixture) -> No
     channels = ["channel_one", "channel_two"]
 
     with caplog.at_level("INFO"):
-        main.send_discord_webhook(channels, mock_url)
+        _twitch_alerts.send_discord_webhook(channels, mock_url)
 
     assert "No Discord webhook given, skipping notification route." in caplog.text
 
@@ -226,7 +226,7 @@ def test_send_pagerduty_alert_success_path(caplog: pytest.LogCaptureFixture) -> 
     responses.add(method="POST", url=pdurl, status=200, match=[matcher])
 
     with caplog.at_level("INFO"):
-        main.send_pagerduty_alert(channels, mock_key)
+        _twitch_alerts.send_pagerduty_alert(channels, mock_key)
 
     assert "PagerDuty notification sent!" in caplog.text
 
@@ -240,7 +240,7 @@ def test_send_pagerduty_alert_failure_path(caplog: pytest.LogCaptureFixture) -> 
     responses.add(method="POST", url=pdurl, status=400)
 
     with caplog.at_level("ERROR"):
-        main.send_pagerduty_alert(channels, mock_key)
+        _twitch_alerts.send_pagerduty_alert(channels, mock_key)
 
     assert "Failed to send PagerDuty notification: 400" in caplog.text
 
@@ -250,6 +250,6 @@ def test_send_pagerduty_alert_no_integration_key(caplog: pytest.LogCaptureFixtur
     channels = ["channel_one", "channel_two"]
 
     with caplog.at_level("INFO"):
-        main.send_pagerduty_alert(channels, mock_key)
+        _twitch_alerts.send_pagerduty_alert(channels, mock_key)
 
     assert "No PagerDuty key given, skipping notification route." in caplog.text
