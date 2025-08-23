@@ -91,7 +91,8 @@ def test_isolate_who_went_live_with_state() -> None:
     expected_no_state = {"channel_one", "channel_three"}
     expected_with_state = {"channel_two"}
 
-    _, filename = tempfile.mkstemp()
+    fd, filename = tempfile.mkstemp()
+    os.close(fd)
     os.remove(filename)
 
     try:
