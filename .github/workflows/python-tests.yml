@@ -23,7 +23,7 @@ jobs:
           - "windows-latest"
           - "ubuntu-latest"
         python-version:
-          - "3.14"
+          - "3.13"
 
     steps:
       - name: "Repo checkout"
