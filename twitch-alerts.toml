@@ -8,3 +8,4 @@ twitch_channel_names = [
 ]
 
 discord_webhook_url="PUT THIS IN THE .env FILE"
+pagerduty_integration_key="PUT THIS IN THE .env FILE"

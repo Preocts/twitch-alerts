@@ -38,8 +38,9 @@ def test_load_config() -> None:
         config = main.load_config()
         assert config.twitch_client_id == "Twitch Client ID here"
         assert config.twitch_client_secret == "PUT THIS IN THE .env FILE"
-        assert config.discord_webhook_url == "PUT THIS IN THE .env FILE"
         assert config.twitch_channel_names == {"all", "the", "streamers"}
+        assert config.discord_webhook_url == ""
+        assert config.pagerduty_key == ""
 
 
 @recorder.use_cassette()
