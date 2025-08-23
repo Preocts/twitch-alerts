@@ -47,8 +47,8 @@ dev = [
 homepage = "https://github.com/Preocts/twitch-alerts"
 
 [project.scripts]
-twitch-alerts-scan = "twitch_alerts.__main__:_run"
-twitch-alerts-scan-once = "twitch_alerts.__main__:_run_once"
+twitch-alerts-scan = "twitch_alerts.__main__:run"
+twitch-alerts-scan-once = "twitch_alerts.__main__:run_once"
 
 [tool.hatch.version]
 source = "vcs"
