@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 import tempfile
 import time
-from unittest.mock import patch
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 import responses
