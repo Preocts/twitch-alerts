@@ -148,11 +148,31 @@ def test_isolate_who_went_live_with_state() -> None:
 
 
 @responses.activate(assert_all_requests_are_fired=True)
-def test_send_discord_webhook_success_path(caplog: pytest.LogCaptureFixture) -> None:
+def test_send_discord_webhook_success_path(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.setattr(time, "time", lambda: 123456.0)
     mock_url = "https://totally.real.discord.webhook.site/124/358"
     channels = ["channel_one", "channel_two"]
+    required_payload = {
+        "username": "Twitch-Alerts",
+        "embeds": [
+            {
+                "title": "<t:123456:R>",
+                "author": {"name": "Twitch-Alerts"},
+                "description": (
+                    "The following streams have been detected as live:\n\n"
+                    "## [channel_one](https://twitch.tv/channel_one)\n"
+                    "## [channel_two](https://twitch.tv/channel_two)"
+                ),
+                "color": 0x9C5D7F,
+            },
+        ],
+    }
+    matcher = matchers.json_params_matcher(required_payload)
 
-    responses.add(method="POST", url=mock_url, status=200)
+    responses.add(method="POST", url=mock_url, status=200, match=[matcher])
 
     with caplog.at_level("INFO"):
         main.send_discord_webhook(channels, mock_url)
