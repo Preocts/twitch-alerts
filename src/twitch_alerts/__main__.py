@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import json
 import os
 import sys
@@ -10,7 +11,6 @@ import tomllib
 import dotenv
 import httpx
 
-from . import log
 
 CONFIG_FILE = "twitch-alerts.toml"
 STATE_FILE = "temp_twitch-alerts-state.json"
@@ -18,8 +18,11 @@ SCAN_FREQUENCY_SECONDS = 300  # Five minutes
 
 dotenv.load_dotenv()
 
-log.init_logging(os.getenv("TWITCH_ALERTS_LOGGGING", "INFO"))
-logger = log.get_logger("twitch-alerts")
+logging.basicConfig(
+    level=os.getenv("TWITCH_ALERTS_LOGGING", "INFO"),
+    format="%(levelname)s [%(asctime)s] - %(message)s",
+)
+logger = logging.getLogger("twitch-alerts")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
