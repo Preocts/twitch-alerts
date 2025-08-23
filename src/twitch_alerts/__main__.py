@@ -26,8 +26,9 @@ logger = log.get_logger("twitch-alerts")
 class Config:
     twitch_client_id: str
     twitch_client_secret: str
-    discord_webhook_url: str
     twitch_channel_names: frozenset[str]
+    discord_webhook_url: str
+    pagerduty_key: str
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -55,12 +56,14 @@ def load_config(filename: str | None = None) -> Config:
 
     client_secret = os.getenv("TWITCH_ALERT_CLIENT_SECRET")
     discord_webhook = os.getenv("TWITCH_ALERT_DISCORD_WEBHOOK")
+    pagerduty_key = os.getenv("TWITCH_ALERT_PAGERDUTY_KEY")
 
     return Config(
         twitch_client_id=raw_config["twitch_client_id"],
         twitch_client_secret=client_secret or raw_config["twitch_client_secret"],
-        discord_webhook_url=discord_webhook or raw_config["discord_webhook_url"],
         twitch_channel_names=frozenset(raw_config["twitch_channel_names"]),
+        discord_webhook_url=discord_webhook or "",
+        pagerduty_key=pagerduty_key or "",
     )
 
 
@@ -202,6 +205,41 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
         logger.info("Discord notification sent!")
 
 
+def send_pagerduty_alert(channel_names: list[str], integration_key: str) -> None:
+    """Send alert to PagerDuty."""
+    if not integration_key:
+        logger.info("No PagerDuty key given, skipping notification route.")
+        return None
+
+    url = "https://events.pagerduty.com/v2/enqueue"
+    channels = {channel: f"https://twitch.tv/{channel}" for channel in channel_names}
+
+    payload = {
+        "routing_key": integration_key,
+        "event_action": "trigger",
+        "dedup_key": str(time.time()),
+        "payload": {
+            "summary": "New TwitchTV channel(s) detected as live.",
+            "source": "Twitch-Alerts",
+            "severity": "info",
+            "custom_details": channels,
+        },
+    }
+
+    response = httpx.post(url, json=payload, timeout=3)
+
+    if not response.is_success:
+        logger.error(
+            "Failed to send PagerDuty notification: %d - %s",
+            response.status_code,
+            response.text,
+        )
+
+    else:
+
+        logger.info("PagerDuty notification sent!")
+
+
 def _run_once() -> None:
     _run(loop_flag=False)
 
@@ -238,6 +276,7 @@ def _run(*, loop_flag: bool = True) -> None:
 
         if new_channels:
             send_discord_webhook(sorted(new_channels), config.discord_webhook_url)
+            send_pagerduty_alert(sorted(new_channels), config.pagerduty_key)
 
             new_channels = frozenset()
 
