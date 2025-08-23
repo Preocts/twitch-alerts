@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
+import time
 from unittest.mock import patch
 
 import vcr  # type: ignore
@@ -62,10 +64,41 @@ def test_is_stream_live() -> None:
 
     assert bearer
 
-    live_check_one = main.is_stream_live("skittishandbus", bearer)
-    live_check_two = main.is_stream_live("djsinneki", bearer)
-    live_check_three = main.is_stream_live("skitishandbus", bearer)
+    live_check_one = main._is_stream_live("skittishandbus", bearer)
+    live_check_two = main._is_stream_live("djsinneki", bearer)
+    live_check_three = main._is_stream_live("skitishandbus", bearer)
 
     assert live_check_one is False
     assert live_check_two is True
     assert live_check_three is False
+
+
+def test_isolate_who_went_live_with_state() -> None:
+    """
+    Complex test.
+    - Start with no state
+    - Assert new stream is captured
+    - Call again now with state
+    - Assert new stream is captured
+    """
+    mock_auth = main.Auth("mock", int(time.time() + 600), "mock")
+    channels = ["channel_one", "channel_two", "channel_three"]
+    expected_no_state = {"channel_one", "channel_three"}
+    expected_with_state = {"channel_two"}
+
+    _, filename = tempfile.mkstemp()
+    os.remove(filename)
+
+    try:
+        with patch.object(main, "is_stream_live", side_effect=[True, False, True]):
+            results_no_state = main.isolate_who_went_live(mock_auth, filename, channels)
+
+        with patch.object(main, "is_stream_live", side_effect=[True, True, True]):
+            results_with_state = main.isolate_who_went_live(mock_auth, filename, channels)
+
+        assert results_no_state == expected_no_state
+        assert results_with_state == expected_with_state
+
+    finally:
+
+        os.remove(filename)

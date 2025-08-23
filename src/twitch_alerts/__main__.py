@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import os
 import time
 import tomllib
@@ -11,6 +12,7 @@ import httpx
 from . import log
 
 CONFIG_FILE = "twitch-alerts.toml"
+STATE_FILE = "temp_twitch-alerts-state.json"
 SCAN_FREQUENCY_SECONDS = 300  # Five minutes
 
 dotenv.load_dotenv()
@@ -86,7 +88,7 @@ def get_bearer_token(client_id: str, client_secret: str) -> Auth | None:
     return Auth(access_token, expires_at, client_id)
 
 
-def is_stream_live(channel_name: str, auth: Auth) -> bool:
+def _is_stream_live(channel_name: str, auth: Auth) -> bool:
     logger.info("Checking on: %s", channel_name)
 
     url = "https://api.twitch.tv/helix/streams"
@@ -108,10 +110,70 @@ def is_stream_live(channel_name: str, auth: Auth) -> bool:
     return is_live
 
 
+def _load_state(state_file: str) -> dict[str, bool]:
+    """Load state map of channel name to is_live status."""
+    if not os.path.exists(state_file):
+        logger.debug("State file '%s' does not exist.", state_file)
+        return {}
+
+    with open(state_file, "r") as infile:
+        logger.debug("Loading '%s' state file.", state_file)
+        return json.load(infile)
+
+
+def _save_state(state: dict[str, bool], state_file: str) -> None:
+    """Save state map of channel name to is_live status to file."""
+    with open(state_file, "w") as outfile:
+        logger.debug("Saving '%s' state file.", state_file)
+        json.dump(state, outfile)
+
+
+def _isolate_newly_active(
+    previous_state: dict[str, bool],
+    current_state: dict[str, bool],
+) -> frozenset[str]:
+    """Isolate the channel names that have gone live since last state check."""
+    new_actives = set()
+    for channel_name, state in current_state.items():
+        if state and not previous_state.get(channel_name, False):
+            new_actives.add(channel_name)
+
+    return frozenset(new_actives)
+
+
+def isolate_who_went_live(
+    auth: Auth,
+    state_file: str,
+    channels: list[str],
+) -> frozenset[str]:
+    """Compare current state of Twitch with saved state, return newly live channel names."""
+    previous_state = _load_state(state_file)
+    current_state = {}
+
+    for channel in channels:
+        current_state[channel] = _is_stream_live(channel, auth)
+
+    new_actives = _isolate_newly_active(previous_state, current_state)
+
+    logger.info("Discovered %d newly live channels (%s)", len(new_actives), new_actives)
+
+    _save_state(current_state, state_file)
+
+    return new_actives
+
+
 if __name__ == "__main__":
     config = load_config("temp_config.toml")
     auth = get_bearer_token(config.twitch_client_id, config.twitch_client_secret)
-    assert auth
+    if auth is None:
+        logger.error("Error authenticating with TwitchTV.")
+        raise SystemExit()
 
-    for channel_name in config.twitch_channel_names:
-        is_stream_live(channel_name, auth)
+    new_actives = isolate_who_went_live(
+        auth=auth,
+        state_file=STATE_FILE,
+        channels=sorted(config.twitch_channel_names),
+    )
+
+    print("Newly live channels:")
+    print("\n\t".join(sorted(new_actives)))
