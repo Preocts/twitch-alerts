@@ -162,6 +162,45 @@ def isolate_who_went_live(
     return new_actives
 
 
+def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
+    """Send notification webhook to Discord."""
+    if not webhook_url:
+        logger.info("No Discord webhook given, skipping notification route.")
+        return None
+
+    streams = [f"## [{channel}](https://twitch.tv/{channel})" for channel in channel_names]
+
+    content = "The following streams have been detected as live:\n\n"
+    content += "\n".join(streams)
+
+    webhook = {
+        "username": "Twitch-Alerts",
+        "embeds": [
+            {
+                "author": {
+                    "name": "Twitch-Alerts",
+                },
+                "title": f"<t:{int(time.time())}:R>",
+                "description": content,
+                "color": 0x9C5D7F,
+            },
+        ],
+    }
+
+    response = httpx.post(webhook_url, json=webhook, timeout=3)
+
+    if not response.is_success:
+        logger.error(
+            "Failed to send discord notification: %d - %s",
+            response.status_code,
+            response.text,
+        )
+
+    else:
+
+        logger.info("Discord notification sent!")
+
+
 if __name__ == "__main__":
     config = load_config("temp_config.toml")
     auth = get_bearer_token(config.twitch_client_id, config.twitch_client_secret)
@@ -174,6 +213,8 @@ if __name__ == "__main__":
         state_file=STATE_FILE,
         channels=sorted(config.twitch_channel_names),
     )
+
+    send_discord_webhook(sorted(new_actives), config.discord_webhook_url)
 
     print("Newly live channels:")
     print("\n\t".join(sorted(new_actives)))

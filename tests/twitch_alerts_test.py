@@ -12,7 +12,12 @@ from twitch_alerts import __main__ as main
 
 
 def filter_access_token(response):
-    json_response = json.loads(response["body"]["string"])
+    try:
+        json_response = json.loads(response["body"]["string"])
+
+    except json.JSONDecodeError:
+        return response
+
     json_response["access_token"] = "mockToken"
     response["body"]["string"] = json.dumps(json_response)
     return response
@@ -90,10 +95,10 @@ def test_isolate_who_went_live_with_state() -> None:
     os.remove(filename)
 
     try:
-        with patch.object(main, "is_stream_live", side_effect=[True, False, True]):
+        with patch.object(main, "_is_stream_live", side_effect=[True, False, True]):
             results_no_state = main.isolate_who_went_live(mock_auth, filename, channels)
 
-        with patch.object(main, "is_stream_live", side_effect=[True, True, True]):
+        with patch.object(main, "_is_stream_live", side_effect=[True, True, True]):
             results_with_state = main.isolate_who_went_live(mock_auth, filename, channels)
 
         assert results_no_state == expected_no_state
@@ -102,3 +107,35 @@ def test_isolate_who_went_live_with_state() -> None:
     finally:
 
         os.remove(filename)
+
+
+@recorder.use_cassette()
+def test_send_discord_webhook_success_path(caplog) -> None:
+    mock_url = "https://webhook.site/139c572d-b842-475e-92b9-5d792b688765"
+    channels = ["channel_one", "channel_two"]
+    caplog.set_level("INFO")
+
+    main.send_discord_webhook(channels, mock_url)
+
+    assert "Discord notification sent!" in caplog.text
+
+
+@recorder.use_cassette()
+def test_send_discord_webhook_failure_path(caplog) -> None:
+    mock_url = "https://webhook.site/139c572d-b842-475e-92b9-5d792b688765"
+    channels = ["channel_one", "channel_two"]
+    caplog.set_level("ERROR")
+
+    main.send_discord_webhook(channels, mock_url)
+
+    assert "Failed to send discord notification: 403" in caplog.text
+
+
+def test_send_discord_webhook_no_webhook(caplog) -> None:
+    mock_url = ""
+    channels = ["channel_one", "channel_two"]
+    caplog.set_level("INFO")
+
+    main.send_discord_webhook(channels, mock_url)
+
+    assert "No Discord webhook given, skipping notification route." in caplog.text

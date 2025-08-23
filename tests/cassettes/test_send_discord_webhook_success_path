@@ -1,0 +1,45 @@
+interactions:
+- request:
+    body: '{"username": "Twitch-Alerts", "embeds": [{"author": {"name": "Twitch-Alerts"},
+      "title": "<t:1755911767:R>", "description": "The following streams have been
+      detected as live:\n\n## [channel_one](https://twitch.tv/channel_one)\n## [channel_two](https://twitch.tv/channel_two)",
+      "color": 10247551}]}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '285'
+      content-type:
+      - application/json
+      host:
+      - webhook.site
+      user-agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://webhook.site/139c572d-b842-475e-92b9-5d792b688765
+  response:
+    body:
+      string: ''
+    headers:
+      cache-control:
+      - no-cache, private
+      content-type:
+      - text/html; charset=UTF-8
+      date:
+      - Sat, 23 Aug 2025 01:16:09 GMT
+      server:
+      - nginx
+      transfer-encoding:
+      - chunked
+      x-request-id:
+      - 625fa005-49f5-488f-b479-c9f9ad112e83
+      x-token-id:
+      - 139c572d-b842-475e-92b9-5d792b688765
+    status:
+      code: 202
+      message: Accepted
+version: 1
