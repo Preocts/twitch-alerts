@@ -5,6 +5,7 @@ import json
 import os
 import time
 import tomllib
+import sys
 
 import dotenv
 import httpx
@@ -155,7 +156,7 @@ def isolate_who_went_live(
 
     new_actives = _isolate_newly_active(previous_state, current_state)
 
-    logger.info("Discovered %d newly live channels (%s)", len(new_actives), new_actives)
+    logger.info("Discovered %d newly live channels.", len(new_actives))
 
     _save_state(current_state, state_file)
 
@@ -201,20 +202,48 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
         logger.info("Discord notification sent!")
 
 
+def _run_once() -> None:
+    _run(loop_flag=False)
+
+
+def _run(*, loop_flag: bool = True) -> None:
+    """Run scans in a loop every SCAN_FREQUENCY_SECONDS, if loop_flag is false only run once."""
+    if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
+        configfile = sys.argv[1]
+    else:
+        configfile = CONFIG_FILE
+
+    config = load_config(configfile)
+    auth: Auth | None = None
+
+    next_scan_at = 0
+    new_channels: frozenset[str] = frozenset()
+
+    while "Party rock is in the house tonight":
+
+        if time.time() > next_scan_at:
+            if auth is None or auth.expired:
+                auth = get_bearer_token(config.twitch_client_id, config.twitch_client_secret)
+                if auth is None:
+                    logger.error("Error authenticating with TwitchTV.")
+                    raise SystemExit()
+
+            new_channels = isolate_who_went_live(
+                auth=auth,
+                state_file=STATE_FILE,
+                channels=sorted(config.twitch_channel_names),
+            )
+
+            next_scan_at = int(time.time()) + SCAN_FREQUENCY_SECONDS
+
+        if new_channels:
+            send_discord_webhook(sorted(new_channels), config.discord_webhook_url)
+
+            new_channels = frozenset()
+
+        if not loop_flag:
+            break
+
+
 if __name__ == "__main__":
-    config = load_config("temp_config.toml")
-    auth = get_bearer_token(config.twitch_client_id, config.twitch_client_secret)
-    if auth is None:
-        logger.error("Error authenticating with TwitchTV.")
-        raise SystemExit()
-
-    new_actives = isolate_who_went_live(
-        auth=auth,
-        state_file=STATE_FILE,
-        channels=sorted(config.twitch_channel_names),
-    )
-
-    send_discord_webhook(sorted(new_actives), config.discord_webhook_url)
-
-    print("Newly live channels:")
-    print("\n\t".join(sorted(new_actives)))
+    _run_once()
