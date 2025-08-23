@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import logging
 import os
 import sys
 import time
 import tomllib
 
 import dotenv
-import httpx
-
-from . import log
+import requests
 
 CONFIG_FILE = "twitch-alerts.toml"
 STATE_FILE = "temp_twitch-alerts-state.json"
@@ -18,8 +17,11 @@ SCAN_FREQUENCY_SECONDS = 300  # Five minutes
 
 dotenv.load_dotenv()
 
-log.init_logging(os.getenv("TWITCH_ALERTS_LOGGGING", "INFO"))
-logger = log.get_logger("twitch-alerts")
+logging.basicConfig(
+    level=os.getenv("TWITCH_ALERTS_LOGGING", "INFO"),
+    format="%(levelname)s [%(asctime)s] - %(message)s",
+)
+logger = logging.getLogger("twitch-alerts")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -78,9 +80,9 @@ def get_bearer_token(client_id: str, client_secret: str) -> Auth | None:
         "grant_type": "client_credentials",
     }
 
-    response = httpx.post(url, data=payload, timeout=3)
+    response = requests.post(url, data=payload, timeout=3)
 
-    if not response.is_success:
+    if not response.ok:
         logger.critical("Failed to get bearer token: %s", response.text)
         return None
 
@@ -98,9 +100,9 @@ def _is_stream_live(channel_name: str, auth: Auth) -> bool:
     url = "https://api.twitch.tv/helix/streams"
     params = {"user_login": channel_name}
 
-    response = httpx.get(url, params=params, timeout=3, headers=auth.headers)
+    response = requests.get(url, params=params, timeout=3, headers=auth.headers)
 
-    if not response.is_success:
+    if not response.ok:
         logger.error("Failed to check '%s' with error: %s", channel_name, response.text)
         return False
 
@@ -191,9 +193,9 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
         ],
     }
 
-    response = httpx.post(webhook_url, json=webhook, timeout=3)
+    response = requests.post(webhook_url, json=webhook, timeout=3)
 
-    if not response.is_success:
+    if not response.ok:
         logger.error(
             "Failed to send discord notification: %d - %s",
             response.status_code,
@@ -226,9 +228,9 @@ def send_pagerduty_alert(channel_names: list[str], integration_key: str) -> None
         },
     }
 
-    response = httpx.post(url, json=payload, timeout=3)
+    response = requests.post(url, json=payload, timeout=3)
 
-    if not response.is_success:
+    if not response.ok:
         logger.error(
             "Failed to send PagerDuty notification: %d - %s",
             response.status_code,
