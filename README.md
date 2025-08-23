@@ -14,6 +14,64 @@ Because I get tired of nonexistance alerts from TwitchTv.
 
 ---
 
+## Install
+
+1. Clone the repo down
+2. If you have `uv`:
+   1. `uv sync`
+3. If you don't:
+   1. Create a venv (or don't, I'm not your senior)
+   2. `python -m pip install .`
+
+## Setup
+
 1. Rename `.env.sample` to `.env`
-2. [Spin up an application on the twitch dev console](https://dev.twitch.tv/console)
-3. Secure the `client_id` and `client_secret` in the `.env` file
+2. Open the `.env` file
+3. Open the `twitch-alerts.toml` file
+
+### Twitch
+
+A TwitchTV application is required.
+
+1. [Spin up an application on the twitch dev console](https://dev.twitch.tv/console)
+2. The redirect url can be `http://localhost:3000`
+3. Copy the `client_id` into the `twitch-alerts.toml`
+4. Copy the `client_secret` into the `.env` file
+
+### Discord
+
+For discord notifications:
+
+1. Select the desired channel and "Edit Channel"
+2. In "Integrations" create a webhook
+3. Copy the webhook URL into the `.env` file for `TWITCH_ALERT_DISCORD_WEBHOOK`
+
+### PagerDuty
+
+For PagerDuty notifications a standard CAF alert is sent at with INFO severity.
+Any API v2 integration key will work (global or service-level).
+
+1. Copy the integration key into the `.env` file for `TWITCH_ALERT_PAGERDUTY_KEY`
+
+## Run
+
+To run forever:
+
+```console
+twitch-alerts-scan
+```
+
+To run once:
+
+```console
+twitch-alerts-scan-once
+```
+
+---
+
+Sparcely documented things:
+
+- Alternate toml configuration files can be made. Pass the desired toml in as the first CLI arguement
+- State between scans is kept in `temp_twitch-alerts-state.json`
+  - Delete it whenever
+  - It is not multi-process safe
