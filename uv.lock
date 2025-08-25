@@ -141,6 +141,15 @@ wheels = [
 ]
 
 [[package]]
+name = "eggviron"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/b7/95df584ddb46f0dc43aebf567f716109882ee4c8aa97bc5f7da134db62bb/eggviron-1.0.0.tar.gz", hash = "sha256:36ff9be59fb3e847de7453e7209b048da9a3266b4a5cbe93ae444550e77add1d", size = 86536, upload-time = "2025-08-25T02:52:43.755Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/55/c5/2ff48563a42ffb15349ccf3d9951678d706ef4c8e4de159437b22a5b11fb/eggviron-1.0.0-py3-none-any.whl", hash = "sha256:37fcc249689a38d07a8197174879eff26b46dd1529dcb8f234b9c857a576ab9c", size = 10876, upload-time = "2025-08-25T02:52:42.276Z" },
+]
+
+[[package]]
 name = "flake8"
 version = "7.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -338,15 +347,6 @@ wheels = [
 ]
 
 [[package]]
-name = "python-dotenv"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f6/b0/4bc07ccd3572a2f9df7e6782f52b0c6c90dcbb803ac4a167702d7d0dfe1e/python_dotenv-1.1.1.tar.gz", hash = "sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab", size = 41978, upload-time = "2025-06-24T04:21:07.341Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/ed/539768cf28c661b5b068d66d96a2f155c4971a5d55684a514c1a0e0dec2f/python_dotenv-1.1.1-py3-none-any.whl", hash = "sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc", size = 20556, upload-time = "2025-06-24T04:21:06.073Z" },
-]
-
-[[package]]
 name = "pyyaml"
 version = "6.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -396,7 +396,7 @@ wheels = [
 name = "twitch-alerts"
 source = { editable = "." }
 dependencies = [
-    { name = "python-dotenv" },
+    { name = "eggviron" },
     { name = "requests" },
 ]
 
@@ -421,7 +421,7 @@ lint = [
 
 [package.metadata]
 requires-dist = [
-    { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "eggviron", specifier = ">=1.0.0" },
     { name = "requests", specifier = ">=2.32.5" },
 ]
 

@@ -20,7 +20,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "python-dotenv>=1.1.1",
+    "eggviron>=1.0.0",
     "requests>=2.32.5",
 ]
 
