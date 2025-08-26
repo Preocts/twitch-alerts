@@ -9,24 +9,11 @@ import time
 import tomllib
 
 import requests
-from eggviron import Eggviron
-from eggviron import EnvFileLoader
 
 CONFIG_FILE = "twitch-alerts.toml"
 STATE_FILE = "temp_twitch-alerts-state.json"
 SCAN_FREQUENCY_SECONDS = 300  # Five minutes
 
-# Will be cleaner with https://github.com/Preocts/eggviron/issues/51
-try:
-    Eggviron().load(EnvFileLoader())
-
-except FileNotFoundError:
-    pass
-
-logging.basicConfig(
-    level=os.getenv("TWITCH_ALERTS_LOGGING", "INFO"),
-    format="%(levelname)s [%(asctime)s] - %(message)s",
-)
 logger = logging.getLogger("twitch-alerts")
 
 
