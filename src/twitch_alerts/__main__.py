@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 
 from eggviron import Eggviron
-from eggviron import EnvironLoader
 from eggviron import EnvFileLoader
+from eggviron import EnvironLoader
 
 from twitch_alerts import _twitch_alerts
 
