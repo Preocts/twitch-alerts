@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from eggviron import Eggviron
+from eggviron import EnvironLoader
 from eggviron import EnvFileLoader
 
 from twitch_alerts import _twitch_alerts
@@ -13,9 +13,10 @@ _REQUIRED_ENVIRONS = {
 }
 
 
-def _init() -> None:
+def runtime_init() -> None:
     """Setup required run-time environment and logging."""
-    missing_required_environ = bool(_REQUIRED_ENVIRONS - set(os.environ.keys()))
+    environ = Eggviron().load(EnvironLoader())
+    missing_required_environ = bool(_REQUIRED_ENVIRONS - set(environ.loaded_values.keys()))
 
     try:
         Eggviron().load(EnvFileLoader())
@@ -29,13 +30,13 @@ def _init() -> None:
             raise SystemExit(1)
 
     logging.basicConfig(
-        level=os.getenv("TWITCH_ALERTS_LOGGING", "INFO"),
+        level=environ.get("TWITCH_ALERTS_LOGGING", "INFO"),
         format="%(levelname)s [%(asctime)s] - %(message)s",
     )
 
 
 def run() -> int:
-    _init()
+    runtime_init()
     try:
         _twitch_alerts.run()
 
@@ -46,7 +47,7 @@ def run() -> int:
 
 
 def run_once() -> int:
-    _init()
+    runtime_init()
     _twitch_alerts.run(loop_flag=False)
     return 0
 
