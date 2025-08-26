@@ -19,7 +19,7 @@ def runtime_init() -> None:
     missing_required_environ = bool(_REQUIRED_ENVIRONS - set(environ.loaded_values.keys()))
 
     try:
-        Eggviron().load(EnvFileLoader())
+        environ.load(EnvFileLoader())
 
     except (FileNotFoundError, OSError):
         if missing_required_environ:
@@ -28,6 +28,11 @@ def runtime_init() -> None:
             )
             print("\n".join(sorted(_REQUIRED_ENVIRONS)))
             raise SystemExit(1)
+
+    except KeyError as err:
+        print("Runtime Error: Duplicate keys found in active environment and '.env' file.")
+        print(err)
+        raise SystemExit(1)
 
     logging.basicConfig(
         level=environ.get("TWITCH_ALERTS_LOGGING", "INFO"),
