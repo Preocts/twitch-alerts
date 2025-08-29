@@ -167,10 +167,13 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
         logger.info("No Discord webhook given, skipping notification route.")
         return None
 
-    streams = [f"## [{channel}](https://twitch.tv/{channel})" for channel in channel_names]
-
-    content = "The following streams have been detected as live:\n\n"
-    content += "\n".join(streams)
+    content_lines = []
+    minutes = SCAN_FREQUENCY_SECONDS // 60
+    for channel in channel_names:
+        content_lines.append(
+            f"The following stream has gone live within the last {minutes} minutes:\n"
+            f"## [{channel}](https://twitch.tv/{channel})\n\n"
+            )
 
     webhook = {
         "username": "Twitch-Alerts",
@@ -180,7 +183,7 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
                     "name": "Twitch-Alerts",
                 },
                 "title": f"<t:{int(time.time())}:R>",
-                "description": content,
+                "description": "".join(content_lines),
                 "color": 0x9C5D7F,
             },
         ],

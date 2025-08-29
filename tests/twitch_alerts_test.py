@@ -162,9 +162,10 @@ def test_send_discord_webhook_success_path(
                 "title": "<t:123456:R>",
                 "author": {"name": "Twitch-Alerts"},
                 "description": (
-                    "The following streams have been detected as live:\n\n"
-                    "## [channel_one](https://twitch.tv/channel_one)\n"
-                    "## [channel_two](https://twitch.tv/channel_two)"
+                    "The following stream has gone live within the last 5 minutes:\n"
+                    "## [channel_one](https://twitch.tv/channel_one)\n\n"
+                    "The following stream has gone live within the last 5 minutes:\n"
+                    "## [channel_two](https://twitch.tv/channel_two)\n\n"
                 ),
                 "color": 0x9C5D7F,
             },
