@@ -173,7 +173,7 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
         content_lines.append(
             f"The following stream has gone live within the last {minutes} minutes:\n"
             f"## [{channel}](https://twitch.tv/{channel})\n\n"
-            )
+        )
 
     webhook = {
         "username": "Twitch-Alerts",
