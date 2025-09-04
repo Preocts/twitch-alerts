@@ -276,3 +276,5 @@ def run(*, loop_flag: bool = True) -> None:
 
         if not loop_flag:
             break
+
+        time.sleep(0.1)
