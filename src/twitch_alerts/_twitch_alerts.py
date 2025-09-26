@@ -200,7 +200,7 @@ def isolate_who_went_live(
     ]
 
 
-def send_discord_webhook(channel_names: list[Channel], webhook_url: str) -> None:
+def send_discord_webhook(channels: list[Channel], webhook_url: str) -> None:
     """Send notification webhook to Discord."""
     if not webhook_url:
         logger.info("No Discord webhook given, skipping notification route.")
@@ -208,7 +208,7 @@ def send_discord_webhook(channel_names: list[Channel], webhook_url: str) -> None
 
     content_lines = []
     minutes = SCAN_FREQUENCY_SECONDS // 60
-    for channel in channel_names:
+    for channel in channels:
         content_lines.append(
             f"The following stream has gone live within the last {minutes} minutes:\n"
             f"## [{channel.name}]({channel.url})\n"
@@ -244,15 +244,15 @@ def send_discord_webhook(channel_names: list[Channel], webhook_url: str) -> None
         logger.info("Discord notification sent!")
 
 
-def send_pagerduty_alert(channel_names: list[Channel], integration_key: str) -> None:
+def send_pagerduty_alert(channels: list[Channel], integration_key: str) -> None:
     """Send alert to PagerDuty."""
     if not integration_key:
         logger.info("No PagerDuty key given, skipping notification route.")
         return None
 
     url = "https://events.pagerduty.com/v2/enqueue"
-    channels = {channel.name: f"{channel.url}" for channel in channel_names}
-    names = ", ".join([channel.name for channel in channel_names])
+    channel_details = {channel.name: f"{channel.url}" for channel in channels}
+    names = ", ".join([channel.name for channel in channels])
 
     payload = {
         "routing_key": integration_key,
@@ -262,7 +262,7 @@ def send_pagerduty_alert(channel_names: list[Channel], integration_key: str) -> 
             "summary": f"Twitch.tv live: {names}",
             "source": "Twitch-Alerts",
             "severity": "info",
-            "custom_details": channels,
+            "custom_details": channel_details,
         },
     }
 
