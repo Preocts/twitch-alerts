@@ -173,9 +173,13 @@ def test_send_discord_webhook_success_path(
                 "author": {"name": "Twitch-Alerts"},
                 "description": (
                     "The following stream has gone live within the last 5 minutes:\n"
-                    "## [channel_one](https://twitch.tv/channel_one)\n\n"
+                    "## [channel_one](https://twitch.tv/channel_one)\n"
+                    "Title: Some Cool Title for channel_one\n"
+                    "Playing: FINALFANTASY XIV ONLINE\n\n"
                     "The following stream has gone live within the last 5 minutes:\n"
-                    "## [channel_two](https://twitch.tv/channel_two)\n\n"
+                    "## [channel_two](https://twitch.tv/channel_two)\n"
+                    "Title: Some Cool Title for channel_two\n"
+                    "Playing: FINALFANTASY XIV ONLINE\n\n"
                 ),
                 "color": 0x9C5D7F,
             },
