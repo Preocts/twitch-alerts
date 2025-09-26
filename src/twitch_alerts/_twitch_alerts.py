@@ -211,7 +211,9 @@ def send_discord_webhook(channel_names: list[Channel], webhook_url: str) -> None
     for channel in channel_names:
         content_lines.append(
             f"The following stream has gone live within the last {minutes} minutes:\n"
-            f"## [{channel.name}]({channel.url})\n\n"
+            f"## [{channel.name}]({channel.url})\n"
+            f"Title: {channel.title}\n"
+            f"Playing: {channel.game}\n\n"
         )
 
     webhook = {
