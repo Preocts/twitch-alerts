@@ -44,6 +44,23 @@ class Auth:
         }
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class Channel:
+    name: str
+    title: str
+    game: str
+    thumbnail_url: str
+    type: str
+
+    @property
+    def url(self) -> str:
+        return f"https://twitch.tv/{self.name}"
+
+    @property
+    def is_live(self) -> bool:
+        return self.type == "live"
+
+
 def load_config(filename: str | None = None) -> Config:
     """Load config toml from current working directory."""
     with open(filename or CONFIG_FILE, "rb") as infile:
