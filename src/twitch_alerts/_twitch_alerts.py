@@ -252,13 +252,14 @@ def send_pagerduty_alert(channel_names: list[Channel], integration_key: str) -> 
 
     url = "https://events.pagerduty.com/v2/enqueue"
     channels = {channel.name: f"{channel.url}" for channel in channel_names}
+    names = ", ".join([channel.name for channel in channel_names])
 
     payload = {
         "routing_key": integration_key,
         "event_action": "trigger",
         "dedup_key": str(time.time()),
         "payload": {
-            "summary": "New TwitchTV channel(s) detected as live.",
+            "summary": f"Twitch.tv live: {names}",
             "source": "Twitch-Alerts",
             "severity": "info",
             "custom_details": channels,
