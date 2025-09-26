@@ -227,7 +227,7 @@ def test_send_pagerduty_alert_success_path(caplog: pytest.LogCaptureFixture) -> 
         "routing_key": mock_key,
         "event_action": "trigger",
         "payload": {
-            "summary": "New TwitchTV channel(s) detected as live.",
+            "summary": "Twitch.tv live: channel_one, channel_two",
             "source": "Twitch-Alerts",
             "severity": "info",
             "custom_details": {
