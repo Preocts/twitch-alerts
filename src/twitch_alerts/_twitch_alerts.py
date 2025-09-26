@@ -50,7 +50,7 @@ class Channel:
     title: str
     game: str
     thumbnail_url: str
-    type: str
+    type: str  # noqa: A003
 
     @property
     def url(self) -> str:
@@ -104,8 +104,8 @@ def get_bearer_token(client_id: str, client_secret: str) -> Auth | None:
     return Auth(access_token, expires_at, client_id)
 
 
-def _is_stream_live(channel_name: str, auth: Auth) -> bool:
-    logger.info("Checking on: %s", channel_name)
+def _get_channel(channel_name: str, auth: Auth) -> Channel:
+    logger.info("Fetching: %s", channel_name)
 
     url = "https://api.twitch.tv/helix/streams"
     params = {"user_login": channel_name}
@@ -113,17 +113,26 @@ def _is_stream_live(channel_name: str, auth: Auth) -> bool:
     response = requests.get(url, params=params, timeout=3, headers=auth.headers)
 
     if not response.ok:
-        logger.error("Failed to check '%s' with error: %s", channel_name, response.text)
-        return False
+        msg = f"Failed to fetch '{channel_name}' with error: {response.text}"
+        logger.error("%s", msg)
+        raise ValueError(msg)
 
     if not response.json()["data"]:
-        is_live = False
-    else:
-        is_live = response.json()["data"][0].get("type") == "live"
+        msg = f"No data for '{channel_name}', must be off-line."
+        logger.info(msg)
+        raise KeyError(msg)
 
-    logger.info("%s live check: %s", channel_name, is_live)
+    channel = Channel(
+        name=response.json()["data"][0]["user_login"],
+        title=response.json()["data"][0]["title"],
+        game=response.json()["data"][0]["game_name"],
+        thumbnail_url=response.json()["data"][0]["thumbnail_url"],
+        type=response.json()["data"][0]["type"],
+    )
 
-    return is_live
+    logger.info("%s live check: %s", channel.name, channel.is_live)
+
+    return channel
 
 
 def _load_state(state_file: str) -> dict[str, bool]:
@@ -161,13 +170,18 @@ def isolate_who_went_live(
     auth: Auth,
     state_file: str,
     channels: list[str],
-) -> frozenset[str]:
+) -> list[Channel]:
     """Compare current state of Twitch with saved state, return newly live channel names."""
     previous_state = _load_state(state_file)
     current_state = {}
 
-    for channel in channels:
-        current_state[channel] = _is_stream_live(channel, auth)
+    live_channel_map: dict[str, Channel] = {}
+
+    for channel_name in channels:
+        channel = _get_channel(channel_name, auth)
+        current_state[channel_name] = channel.is_live
+        if channel.is_live:
+            live_channel_map[channel.name] = channel
 
     new_actives = _isolate_newly_active(previous_state, current_state)
 
@@ -175,10 +189,12 @@ def isolate_who_went_live(
 
     _save_state(current_state, state_file)
 
-    return new_actives
+    return [
+        channel for channel_name, channel in live_channel_map.items() if channel_name in new_actives
+    ]
 
 
-def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
+def send_discord_webhook(channel_names: list[Channel], webhook_url: str) -> None:
     """Send notification webhook to Discord."""
     if not webhook_url:
         logger.info("No Discord webhook given, skipping notification route.")
@@ -189,7 +205,7 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
     for channel in channel_names:
         content_lines.append(
             f"The following stream has gone live within the last {minutes} minutes:\n"
-            f"## [{channel}](https://twitch.tv/{channel})\n\n"
+            f"## [{channel.name}]({channel.url})\n\n"
         )
 
     webhook = {
@@ -220,14 +236,14 @@ def send_discord_webhook(channel_names: list[str], webhook_url: str) -> None:
         logger.info("Discord notification sent!")
 
 
-def send_pagerduty_alert(channel_names: list[str], integration_key: str) -> None:
+def send_pagerduty_alert(channel_names: list[Channel], integration_key: str) -> None:
     """Send alert to PagerDuty."""
     if not integration_key:
         logger.info("No PagerDuty key given, skipping notification route.")
         return None
 
     url = "https://events.pagerduty.com/v2/enqueue"
-    channels = {channel: f"https://twitch.tv/{channel}" for channel in channel_names}
+    channels = {channel: f"{channel.url}" for channel in channel_names}
 
     payload = {
         "routing_key": integration_key,
@@ -266,7 +282,7 @@ def run(*, loop_flag: bool = True) -> None:
     auth: Auth | None = None
 
     next_scan_at = 0
-    new_channels: frozenset[str] = frozenset()
+    new_channels: list[Channel] = []
 
     while "Party rock is in the house tonight":
 
@@ -286,10 +302,11 @@ def run(*, loop_flag: bool = True) -> None:
             next_scan_at = int(time.time()) + SCAN_FREQUENCY_SECONDS
 
         if new_channels:
-            send_discord_webhook(sorted(new_channels), config.discord_webhook_url)
-            send_pagerduty_alert(sorted(new_channels), config.pagerduty_key)
+            new_channels.sort(key=lambda channel: channel.name)
+            send_discord_webhook(new_channels, config.discord_webhook_url)
+            send_pagerduty_alert(new_channels, config.pagerduty_key)
 
-            new_channels = frozenset()
+            new_channels.clear()
 
         if not loop_flag:
             break
