@@ -249,7 +249,7 @@ def send_pagerduty_alert(channel_names: list[Channel], integration_key: str) -> 
         return None
 
     url = "https://events.pagerduty.com/v2/enqueue"
-    channels = {channel: f"{channel.url}" for channel in channel_names}
+    channels = {channel.name: f"{channel.url}" for channel in channel_names}
 
     payload = {
         "routing_key": integration_key,
