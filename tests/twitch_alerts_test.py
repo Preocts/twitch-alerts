@@ -46,6 +46,16 @@ def make_twitch_streams_json(user_login: str, *, is_live: bool = True) -> dict[s
     }
 
 
+def make_channel(user_login: str) -> _twitch_alerts.Channel:
+    return _twitch_alerts.Channel(
+        name=user_login,
+        title=f"Some Cool Title for {user_login}",
+        game="FINALFANTASY XIV ONLINE",
+        thumbnail_url=f"https://static-cdn.jtvnw.net/previews-ttv/live_user_{user_login}-{{width}}x{{height}}.jpg",
+        type="live",
+    )
+
+
 def test_load_config() -> None:
     with patch.dict(os.environ, {}, clear=True):
         config = _twitch_alerts.load_config()
@@ -139,8 +149,8 @@ def test_isolate_who_went_live_with_state() -> None:
         results_no_state = _twitch_alerts.isolate_who_went_live(mock_auth, filename, channels)
         results_with_state = _twitch_alerts.isolate_who_went_live(mock_auth, filename, channels)
 
-        assert results_no_state == expected_no_state
-        assert results_with_state == expected_with_state
+        assert {channel.name for channel in results_no_state} == expected_no_state
+        assert {channel.name for channel in results_with_state} == expected_with_state
 
     finally:
 
@@ -154,7 +164,7 @@ def test_send_discord_webhook_success_path(
 ) -> None:
     monkeypatch.setattr(time, "time", lambda: 123456.0)
     mock_url = "https://totally.real.discord.webhook.site/124/358"
-    channels = ["channel_one", "channel_two"]
+    channels = [make_channel("channel_one"), make_channel("channel_two")]
     required_payload = {
         "username": "Twitch-Alerts",
         "embeds": [
@@ -184,7 +194,7 @@ def test_send_discord_webhook_success_path(
 @responses.activate(assert_all_requests_are_fired=True)
 def test_send_discord_webhook_failure_path(caplog: pytest.LogCaptureFixture) -> None:
     mock_url = "https://totally.real.discord.webhook.site/124/358"
-    channels = ["channel_one", "channel_two"]
+    channels = [make_channel("channel_one"), make_channel("channel_two")]
 
     responses.add(method="POST", url=mock_url, status=404)
 
@@ -196,7 +206,7 @@ def test_send_discord_webhook_failure_path(caplog: pytest.LogCaptureFixture) -> 
 
 def test_send_discord_webhook_no_webhook(caplog: pytest.LogCaptureFixture) -> None:
     mock_url = ""
-    channels = ["channel_one", "channel_two"]
+    channels = [make_channel("channel_one"), make_channel("channel_two")]
 
     with caplog.at_level("INFO"):
         _twitch_alerts.send_discord_webhook(channels, mock_url)
@@ -208,7 +218,7 @@ def test_send_discord_webhook_no_webhook(caplog: pytest.LogCaptureFixture) -> No
 def test_send_pagerduty_alert_success_path(caplog: pytest.LogCaptureFixture) -> None:
     pdurl = "https://events.pagerduty.com/v2/enqueue"
     mock_key = "pd123"
-    channels = ["channel_one", "channel_two"]
+    channels = [make_channel("channel_one"), make_channel("channel_two")]
     required_payload = {
         "routing_key": mock_key,
         "event_action": "trigger",
@@ -236,7 +246,7 @@ def test_send_pagerduty_alert_success_path(caplog: pytest.LogCaptureFixture) -> 
 def test_send_pagerduty_alert_failure_path(caplog: pytest.LogCaptureFixture) -> None:
     pdurl = "https://events.pagerduty.com/v2/enqueue"
     mock_key = "pd123"
-    channels = ["channel_one", "channel_two"]
+    channels = [make_channel("channel_one"), make_channel("channel_two")]
 
     responses.add(method="POST", url=pdurl, status=400)
 
@@ -248,7 +258,7 @@ def test_send_pagerduty_alert_failure_path(caplog: pytest.LogCaptureFixture) -> 
 
 def test_send_pagerduty_alert_no_integration_key(caplog: pytest.LogCaptureFixture) -> None:
     mock_key = ""
-    channels = ["channel_one", "channel_two"]
+    channels = [make_channel("channel_one"), make_channel("channel_two")]
 
     with caplog.at_level("INFO"):
         _twitch_alerts.send_pagerduty_alert(channels, mock_key)
