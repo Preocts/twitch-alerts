@@ -181,12 +181,8 @@ def isolate_who_went_live(
         try:
             channel = _get_channel(channel_name, auth)
 
-        except ValueError:
-            # Unable to collect information on channel
-            continue
-
-        except KeyError:
-            # Channel has no data, likely not live
+        except (ValueError, KeyError):
+            current_state[channel_name] = False
             continue
 
         current_state[channel_name] = channel.is_live
