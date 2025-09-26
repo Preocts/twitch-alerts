@@ -178,7 +178,17 @@ def isolate_who_went_live(
     live_channel_map: dict[str, Channel] = {}
 
     for channel_name in channels:
-        channel = _get_channel(channel_name, auth)
+        try:
+            channel = _get_channel(channel_name, auth)
+
+        except ValueError:
+            # Unable to collect information on channel
+            continue
+
+        except KeyError:
+            # Channel has no data, likely not live
+            continue
+
         current_state[channel_name] = channel.is_live
         if channel.is_live:
             live_channel_map[channel.name] = channel
