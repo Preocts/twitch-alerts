@@ -207,10 +207,8 @@ def send_discord_webhook(channels: list[Channel], webhook_url: str) -> None:
         return None
 
     content_lines = []
-    minutes = SCAN_FREQUENCY_SECONDS // 60
     for channel in channels:
         content_lines.append(
-            f"The following stream has gone live within the last {minutes} minutes:\n"
             f"## [{channel.name}]({channel.url})\n"
             f"Title: {channel.title}\n"
             f"Playing: {channel.game}\n\n"
