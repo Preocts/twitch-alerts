@@ -119,7 +119,7 @@ def test_isolate_who_went_live_with_state() -> None:
         ("invalid", False),
         ("channel_three", True),
         ("channel_four", False),
-        # checked with cache. Only channel_two is expected to be captured
+        # checked with cache. Only channel_four is expected to be captured
         ("channel_one", True),
         ("invalid", False),
         ("channel_three", True),

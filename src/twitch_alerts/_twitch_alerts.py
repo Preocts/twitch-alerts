@@ -160,6 +160,8 @@ def _isolate_newly_active(
     """Isolate the channel names that have gone live since last state check."""
     new_actives = set()
     for channel_name, state in current_state.items():
+        channel_name = channel_name.lower()
+
         if state and not previous_state.get(channel_name, False):
             new_actives.add(channel_name)
 
@@ -178,6 +180,8 @@ def isolate_who_went_live(
     live_channel_map: dict[str, Channel] = {}
 
     for channel_name in channels:
+        channel_name = channel_name.lower()
+
         try:
             channel = _get_channel(channel_name, auth)
 
