@@ -110,7 +110,13 @@ def _get_channel(channel_name: str, auth: Auth) -> Channel:
     url = "https://api.twitch.tv/helix/streams"
     params = {"user_login": channel_name}
 
-    response = requests.get(url, params=params, timeout=3, headers=auth.headers)
+    try:
+        response = requests.get(url, params=params, timeout=3, headers=auth.headers)
+
+    except requests.ConnectionError as err:
+        msg = f"Connection error, skipping check on {channel_name}: {err}"
+        logger.error("%s", msg)
+        raise ValueError(msg)
 
     if not response.ok:
         msg = f"Failed to fetch '{channel_name}' with error: {response.text}"
