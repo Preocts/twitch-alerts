@@ -7,6 +7,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+import requests
 import responses
 from responses import matchers
 
@@ -266,3 +267,24 @@ def test_send_pagerduty_alert_no_integration_key(caplog: pytest.LogCaptureFixtur
         _twitch_alerts.send_pagerduty_alert(channels, mock_key)
 
     assert "No PagerDuty key given, skipping notification route." in caplog.text
+
+
+def test_get_channel_connection_error(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that a ConnectionError is handled the same as no data for a channel."""
+
+    def mock_get(url: str, params: dict[str, Any], timeout: int, headers: dict[str, str]) -> None:
+        raise requests.ConnectionError("Mock Connection Failure")
+
+    monkeypatch.setattr(_twitch_alerts.requests, "get", mock_get)
+
+    mock_token = "mockToken"
+    mock_client_id = "mockClientId"
+    mock_channel = "Egg"
+    mock_auth = _twitch_alerts.Auth(mock_token, int(time.time() + 600), mock_client_id)
+    match = "Connection error, skipping check on Egg: Mock Connection Failure"
+
+    with pytest.raises(ValueError, match=match):
+        _twitch_alerts._get_channel(mock_channel, mock_auth)
